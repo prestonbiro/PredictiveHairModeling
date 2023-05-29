@@ -8,25 +8,28 @@ library(tidyverse)
 monthOpts = c('02','03','04')
 dayOpts = 1:31
 timeOpts = c('Morning','Midday','Night')
-urlDF = expand.grid(month = monthOpts,day = dayOpts,time = timeOpts) %>% 
-  mutate(URL = paste0("https://raw.githubusercontent.com/prestonbiro/PredictiveHairModeling/main/Pictures/",
-                   month,'-',ifelse(day < 10,paste0('0',day),day),'-',time,'.png')) %>% 
+pathDF = expand.grid(month = monthOpts,day = dayOpts,time = timeOpts) %>% 
+  mutate(Path = paste0(month,'-',ifelse(day < 10,paste0('0',day),day),'-',time,'.png')) %>%
   filter(!((month == '02') & (day <= 10 | day >= 29))) %>%
   filter(!((month == '04') & (day == 31 | day == 22 | day == 23))) %>%
   filter(!(month == '03' & day == 12 & time == 'Morning')) %>% 
   filter(!(month == '02' & day == 28 & time == 'Midday')) %>% 
-  arrange(month,day,time)
+  arrange(month,day,time) %>% 
+  mutate(PictureID = 1:229)
 
-urlOpts = urlDF %>% pull(URL)
+compList <- read.csv('Min5CompsList.csv')
 
-preloadedImgTop = lapply(urlOpts[1:50],function(x) img(src = x,width = 600))
-preloadedImgBot = lapply(urlOpts[51:100],function(x) img(src = x,width = 600))
-maxCounter = 50
+# urlOpts = urlDF %>% pull(URL)
+pathOpts = pathDF %>% pull(Path)
 
-compareDF <- data.frame(NameTop = urlOpts[1:maxCounter],NameBot = urlOpts[1:maxCounter + maxCounter])
+compareDF <- data.frame(NameTop = compList$IDTop,NameBot = compList$IDBot)
+maxCounter = nrow(compareDF)
 
 saveDF = compareDF %>% select(NameTop,NameBot) %>% mutate(SelectedPictures = 'Undecided')
 write.csv(saveDF,file = 'HairSelections.csv',row.names = F)
+
+myImgResources <- paste0('imgResources/',pathOpts)
+addResourcePath(prefix = 'imgResources', directoryPath = 'Pictures/Trios/')
 
 ui <- fluidPage(
   mainPanel(
@@ -42,31 +45,33 @@ ui <- fluidPage(
     ),
     
     br(),
-    # 50 images to display
-    # lapply(X = seq_len(50), FUN = function(i) {
-    #   # condition on the slider value
-    #   conditionalPanel(condition = paste0("input.slider == ", i),
-    #                    # images are on github
-    #                    img(src = paste0("https://raw.githubusercontent.com/prestonbiro/PredictiveHairModeling/main/Pictures/",
-    #                                     '02-',i,'-Midday.png'),width = 600)
-    #   )
-    # }),
-    # lapply(X = seq_len(50), FUN = function(i) {
-    #   # condition on the slider value
-    #   conditionalPanel(condition = paste0("input.slider == ", i),
-    #                    # images are on github
-    #                    img(src = paste0("https://raw.githubusercontent.com/prestonbiro/PredictiveHairModeling/main/Pictures/",
-    #                                     '03-',i,'-Midday.png'),width = 600)
-    #   )
-    # }),
+
     fluidRow(
       column(width = 8,
+             # column(width = 12,
+             #        lapply(X = seq_len(maxCounter), FUN = function(i) {
+             #          # condition on the slider value
+             #          conditionalPanel(condition = paste0("input.slider == ", i),
+             #                           # images are on github
+             #                           preloadedImgTop[[i]]
+             #          )
+             #        })
+             # ),
+             # column(width = 12,
+             #        lapply(X = seq_len(maxCounter), FUN = function(i) {
+             #          # condition on the slider value
+             #          conditionalPanel(condition = paste0("input.slider == ", i),
+             #                           # images are on github
+             #                           preloadedImgBot[[i]]
+             #          )
+             #        }),
+             # )
              column(width = 12,
                     lapply(X = seq_len(maxCounter), FUN = function(i) {
                       # condition on the slider value
                       conditionalPanel(condition = paste0("input.slider == ", i),
                                        # images are on github
-                                       preloadedImgTop[[i]]
+                                       img(src = myImgResources[compList$IDTop[i]],width = '600px')
                       )
                     })
              ),
@@ -75,7 +80,7 @@ ui <- fluidPage(
                       # condition on the slider value
                       conditionalPanel(condition = paste0("input.slider == ", i),
                                        # images are on github
-                                       preloadedImgBot[[i]]
+                                       img(src = myImgResources[compList$IDBot[i]],width = '600px')
                       )
                     }),
              )
@@ -107,10 +112,16 @@ ui <- fluidPage(
              ),
              br(),
              fluidRow(
-               column(width = 12,
+               column(width = 8,
                       sliderInput(inputId = "slider", label = "Progress:", 
                                   min = 1, max = maxCounter, value = 1,step = 1)
-               )
+               ),
+               column(width = 3,
+                      numericInput(inputId = 'skipTo',label = 'Skip to:',
+                                   min = 1,max = maxCounter,value = 1,step = 1)
+               ),
+               column(width = 1,
+                      actionButton(inputId = 'skipToButton',label = 'Go'))
              ),
              br(),
              fluidRow(
@@ -153,21 +164,24 @@ server <- function(input, output) {
   observeEvent(input$loadButton,{
     currentRanking <- read.csv('HairSelections.csv')
     lapply(1:maxCounter,function(x) currentSelections[[as.character(x)]] <- currentRanking[x,'SelectedPictures'])
+    output$currentSelection <- renderText({
+      currentSelections[[as.character(input$slider)]]
+    })
+  })
+  observeEvent(input$skipToButton,{
+    skipToVal <- input$skipTo
+    updateSliderInput(inputId = 'slider',value = skipToVal)
   })
 }
 
 shinyApp(ui = ui, server = server)
 
-#To retrieve selection, can say 
-#isolate(currentSelections[['xxx']])
-#where xxx is the index number
-
 #To do:
 #-Make save feature streamlined to clean csv
 #-Make load feature
-#Make images load faster
+#-Make images load locally
 #-Make skip button
-#*Make picture comparison lists
-#Make batches (should aim for 1K comparisons, maybe 20 batches of 50)
+#-*Make picture comparison lists
 #-Clean up interface
 #Add up down and equal icons
+
