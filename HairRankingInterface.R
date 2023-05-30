@@ -29,16 +29,16 @@ saveDF = compareDF %>% select(NameTop,NameBot) %>% mutate(SelectedPictures = 'Un
 write.csv(saveDF,file = 'HairSelections.csv',row.names = F)
 
 myImgResources <- paste0('imgResources/',pathOpts)
-addResourcePath(prefix = 'imgResources', directoryPath = 'Pictures/Trios/')
+addResourcePath(prefix = 'imgResources', directoryPath = 'Pictures/')
 
 ui <- fluidPage(
   mainPanel(
     
     fluidRow(
-      column(width = 8,
+      column(width = 9,
              h1("Hair Image Ranking"),       
       ),
-      column(width = 4,
+      column(width = 3,
              br(),
              actionButton('loadButton','Load Past Selections'), 
       )
@@ -47,31 +47,14 @@ ui <- fluidPage(
     br(),
 
     fluidRow(
-      column(width = 8,
-             # column(width = 12,
-             #        lapply(X = seq_len(maxCounter), FUN = function(i) {
-             #          # condition on the slider value
-             #          conditionalPanel(condition = paste0("input.slider == ", i),
-             #                           # images are on github
-             #                           preloadedImgTop[[i]]
-             #          )
-             #        })
-             # ),
-             # column(width = 12,
-             #        lapply(X = seq_len(maxCounter), FUN = function(i) {
-             #          # condition on the slider value
-             #          conditionalPanel(condition = paste0("input.slider == ", i),
-             #                           # images are on github
-             #                           preloadedImgBot[[i]]
-             #          )
-             #        }),
-             # )
+      column(width = 9,
              column(width = 12,
                     lapply(X = seq_len(maxCounter), FUN = function(i) {
                       # condition on the slider value
                       conditionalPanel(condition = paste0("input.slider == ", i),
                                        # images are on github
-                                       img(src = myImgResources[compList$IDTop[i]],width = '600px')
+                                       img(src = myImgResources[compList$IDTop[i]],
+                                           width = '600px')
                       )
                     })
              ),
@@ -80,52 +63,58 @@ ui <- fluidPage(
                       # condition on the slider value
                       conditionalPanel(condition = paste0("input.slider == ", i),
                                        # images are on github
-                                       img(src = myImgResources[compList$IDBot[i]],width = '600px')
+                                       img(src = myImgResources[compList$IDBot[i]],
+                                           width = '600px')
                       )
                     }),
              )
       ),
-      column(width = 4,
+      column(width = 3,
              fluidRow(
                column(width = 6,
                       radioButtons('pictureSelection',label = 'Which hair pictures are better?',
                                    c('Top' = 'Top',
                                      'Bottom' = 'Bottom',
                                      'About the Same' = 'Same')),
-                      actionButton('submitButton','Submit',width = 400)
+                      actionButton('submitButton','Submit',width = 200)
                ),
                column(width = 6,
-                      h3('Your current selection: \n'),
-                      h3(textOutput('currentSelection'))
+                      h4('Your current selection: \n'),
+                      h4(textOutput('currentSelection'))
                )
              ),    
              br(),
              fluidRow(
                column(width = 6,
                       actionButton('backButton','Back',
-                                   style = 'width:200px'),
+                                   style = 'width:100px'),
                ),
                column(width = 6,
                       actionButton('skipButton','Skip',
-                                   style = 'width:200px'),
+                                   style = 'width:100px'),
                )
              ),
              br(),
              fluidRow(
-               column(width = 8,
+               column(width = 12,
                       sliderInput(inputId = "slider", label = "Progress:", 
                                   min = 1, max = maxCounter, value = 1,step = 1)
-               ),
-               column(width = 3,
+               )
+             ),
+             fluidRow(
+               column(width = 9,
                       numericInput(inputId = 'skipTo',label = 'Skip to:',
                                    min = 1,max = maxCounter,value = 1,step = 1)
                ),
-               column(width = 1,
+               br(),
+               column(width = 3,
                       actionButton(inputId = 'skipToButton',label = 'Go'))
              ),
-             br(),
+             # br(),
              fluidRow(
-               actionButton('saveButton','Save',width = 400)
+               column(width = 12,
+                      actionButton('saveButton','Save',width = 200)
+               )
              )
       )
     )
